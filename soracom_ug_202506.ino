@@ -20,9 +20,13 @@
 #define LTEM_BAND (WioCellularNetwork::NTTDOCOMO_LTEM_BAND)                          // https://seeedjp.github.io/Wiki/Wio_BG770A/kb/kb4.html
 static const char APN[] = "soracom.io";
 
-static const char HOST[] = "uni.soracom.io";
-static const char PATH[] = "/record.json";
-static constexpr int PORT = 80;
+static const char GET_HOST[] = "metadata.soracom.io";
+static const char GET_PATH[] = "/v1/userdata";
+static constexpr int GET_PORT = 80;
+
+static const char POST_HOST[] = "uni.soracom.io";
+static const char POST_PATH[] = "/record.json";
+static constexpr int POST_PORT = 80;
 
 static constexpr int INTERVAL = 1000 * 60 * 5;         // [ms]
 static constexpr int POWER_ON_TIMEOUT = 1000 * 20;     // [ms]
@@ -82,8 +86,25 @@ void setup(void) {
 void loop(void) {
   digitalWrite(LED_BUILTIN, HIGH);
 
+  HttpResponse response;
+  {
+    WioCellularArduinoTcpClient<WioCellularModule> client{ WioCellular, WioNetwork.config.pdpContextId };
+    response = httpRequest(client, GET_HOST, GET_PORT, GET_PATH, "GET", "application/json", "");
+  }
+  Serial.print("Body: ");
+
+  // Check if the body contains a number and assign it to app_id
+  int app_id = 0;
+  if (response.body.find_first_not_of("0123456789") == std::string::npos) {
+    app_id = std::stoi(response.body);
+    Serial.print("Extracted app_id: ");
+    Serial.println(app_id);
+  } else {
+    Serial.println("Response body does not contain a valid number.");
+  }
+
   JsonDoc.clear();
-  if (generateRequestBody(JsonDoc)) {
+  if (generateRequestBody(JsonDoc, app_id)) {
     std::string jsonStr;
     serializeJson(JsonDoc, jsonStr);
     Serial.println(jsonStr.c_str());
@@ -91,7 +112,7 @@ void loop(void) {
     HttpResponse response;
     {
       WioCellularArduinoTcpClient<WioCellularModule> client{ WioCellular, WioNetwork.config.pdpContextId };
-      response = httpRequest(client, HOST, PORT, PATH, "POST", "application/json", jsonStr.c_str());
+      response = httpRequest(client, POST_HOST, POST_PORT, POST_PATH, "POST", "application/json", jsonStr.c_str());
     }
 
     Serial.println("Header(s):");
@@ -104,15 +125,6 @@ void loop(void) {
     }
     Serial.print("Body: ");
     Serial.println(response.body.c_str());
-
-    if (response.statusCode == 200) {
-      JsonDoc.clear();
-      deserializeJson(JsonDoc, response.body.c_str());
-      // Output the IMSI field as an example of how to use the response
-      Serial.print("Response imsi> ");
-      Serial.print(JsonDoc["imsi"].as<String>());
-      Serial.println();
-    }
   }
 
   digitalWrite(LED_BUILTIN, LOW);
@@ -123,11 +135,10 @@ void loop(void) {
 /**
  * Generate request body for many sensor data.
  */
-static bool generateRequestBody(JsonDocument& doc) {
+static bool generateRequestBody(JsonDocument& doc, int app_id) {
   Serial.println("### Measuring");
 
-  // TODO: app_id from SORACOM user data
-  doc["app"] = 1;
+  doc["app"] = app_id ;
 
   JsonObject record = doc.createNestedObject("record");
 
