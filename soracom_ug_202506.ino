@@ -20,8 +20,8 @@
 #define LTEM_BAND (WioCellularNetwork::NTTDOCOMO_LTEM_BAND)                          // https://seeedjp.github.io/Wiki/Wio_BG770A/kb/kb4.html
 static const char APN[] = "soracom.io";
 
-static const char HOST[] = "metadata.soracom.io";
-static const char PATH[] = "/v1/subscriber/tags";
+static const char HOST[] = "uni.soracom.io";
+static const char PATH[] = "/record.json";
 static constexpr int PORT = 80;
 
 static constexpr int INTERVAL = 1000 * 60 * 5;         // [ms]
@@ -91,7 +91,7 @@ void loop(void) {
     HttpResponse response;
     {
       WioCellularArduinoTcpClient<WioCellularModule> client{ WioCellular, WioNetwork.config.pdpContextId };
-      response = httpRequest(client, HOST, PORT, PATH, "PUT", "application/json", jsonStr.c_str());
+      response = httpRequest(client, HOST, PORT, PATH, "POST", "application/json", jsonStr.c_str());
     }
 
     Serial.println("Header(s):");
@@ -121,17 +121,22 @@ void loop(void) {
 }
 
 /**
- * Generate request body for update SIM tag
- * See: https://users.soracom.io/ja-jp/docs/air/use-metadata/#%E3%83%A1%E3%82%BF%E3%83%87%E3%83%BC%E3%82%BF%E3%81%AE%E6%9B%B8%E3%81%8D%E8%BE%BC%E3%81%BF%E4%BE%8B-iot-sim-%E3%81%AE%E3%82%BF%E3%82%B0%E3%82%92%E8%BF%BD%E5%8A%A0--%E6%9B%B4%E6%96%B0%E3%81%99%E3%82%8B
+ * Generate request body for many sensor data.
  */
 static bool generateRequestBody(JsonDocument& doc) {
   Serial.println("### Measuring");
 
-  JsonArray rootArray = doc.to<JsonArray>();
+  // TODO: app_id from SORACOM user data
+  doc["app"] = 1;
 
-  JsonObject uptimeTag = rootArray.add<JsonObject>();
-  uptimeTag["tagName"] = "UPTIME";
-  uptimeTag["tagValue"] = std::to_string(millis() / 1000);
+  JsonObject record = doc.createNestedObject("record");
+
+  // TODO: sensor data from many sensors
+  record["distance"]["value"] = 333;
+  record["co2"]["value"] = 444;
+  record["temperature"]["value"] = 111;
+  record["humidity"]["value"] = 222;
+  record["measure_date"]["value"] = "2025-04-24T07:53:00Z";
 
   Serial.println("### Completed");
 
