@@ -39,6 +39,14 @@ struct HttpResponse {
   std::string body;
 };
 
+struct SensorData {
+  int distance;
+  int co2;
+  int temperature;
+  int humidity;
+  const char* measure_date;
+};
+
 static void abortHandler(int sig) {
   while (true) {
     ledOn(LED_BUILTIN);
@@ -103,8 +111,16 @@ void loop(void) {
     Serial.println("Response body does not contain a valid number.");
   }
 
+  // Create SensorData instance and populate it with sample data
+  SensorData sensorData;
+  sensorData.distance = 100;  // Example value
+  sensorData.co2 = 400;       // Example value
+  sensorData.temperature = 25; // Example value
+  sensorData.humidity = 60;    // Example value
+  sensorData.measure_date = "2025-04-25T12:00:00Z"; // Example ISO 8601 date
+
   JsonDoc.clear();
-  if (generateRequestBody(JsonDoc, app_id)) {
+  if (generateRequestBody(JsonDoc, app_id, sensorData)) {
     std::string jsonStr;
     serializeJson(JsonDoc, jsonStr);
     Serial.println(jsonStr.c_str());
@@ -135,19 +151,18 @@ void loop(void) {
 /**
  * Generate request body for many sensor data.
  */
-static bool generateRequestBody(JsonDocument& doc, int app_id) {
+static bool generateRequestBody(JsonDocument& doc, int app_id, const SensorData& sensorData) {
   Serial.println("### Measuring");
 
-  doc["app"] = app_id ;
+  doc["app"] = app_id;
 
   JsonObject record = doc.createNestedObject("record");
 
-  // TODO: sensor data from many sensors
-  record["distance"]["value"] = 333;
-  record["co2"]["value"] = 444;
-  record["temperature"]["value"] = 111;
-  record["humidity"]["value"] = 222;
-  record["measure_date"]["value"] = "2025-04-24T07:53:00Z";
+  record["distance"]["value"] = sensorData.distance;
+  record["co2"]["value"] = sensorData.co2;
+  record["temperature"]["value"] = sensorData.temperature;
+  record["humidity"]["value"] = sensorData.humidity;
+  record["measure_date"]["value"] = sensorData.measure_date;
 
   Serial.println("### Completed");
 
