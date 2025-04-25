@@ -15,7 +15,8 @@
 #include <WioCellular.h>
 #include <ArduinoJson.h>
 #include <ArduinoHttpClient.h>
-#include <DHT.h>  // Include DHT library
+#include <DHT.h>
+#include <Ultrasonic.h>
 
 #define SEARCH_ACCESS_TECHNOLOGY (WioCellularNetwork::SearchAccessTechnology::LTEM)  // https://seeedjp.github.io/Wiki/Wio_BG770A/kb/kb4.html
 #define LTEM_BAND (WioCellularNetwork::NTTDOCOMO_LTEM_BAND)                          // https://seeedjp.github.io/Wiki/Wio_BG770A/kb/kb4.html
@@ -34,9 +35,11 @@ static constexpr int POWER_ON_TIMEOUT = 1000 * 20;     // [ms]
 static constexpr int NETWORK_TIMEOUT = 1000 * 60 * 2;  // [ms]
 static constexpr int RECEIVE_TIMEOUT = 1000 * 10;      // [ms]
 
-#define DHTPIN D28  // Pin for DHT22 sensor
+#define ULTRASONIC_PIN (D30)  // Grove - Digital (P1)
+#define DHTPIN D28  // Grove -Analog (P2)
 #define DHTTYPE DHT22  // Define sensor type as DHT22
 
+Ultrasonic UltrasonicRanger(ULTRASONIC_PIN);
 DHT dht(DHTPIN, DHTTYPE);  // Create DHT object
 
 struct HttpResponse {
@@ -46,7 +49,7 @@ struct HttpResponse {
 };
 
 struct SensorData {
-  int distance;
+  long distance;
   int co2;
   float temperature;
   float humidity;
@@ -126,7 +129,7 @@ void loop(void) {
 
   // Create SensorData instance and populate it with sensor data
   SensorData sensorData;
-  sensorData.distance = 100;  // Example value
+  sensorData.distance = UltrasonicRanger.MeasureInCentimeters();
   sensorData.co2 = 400;       // Example value
 
   // Read temperature and humidity from DHT22 sensor
