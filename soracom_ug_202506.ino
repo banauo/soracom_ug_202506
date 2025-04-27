@@ -66,6 +66,28 @@ static void abortHandler(int sig) {
   }
 }
 
+/**
+ * Custom function to parse date header into a tm structure.
+ */
+bool parseDateHeader(const char* dateHeader, struct tm& tm) {
+  int day, year, hour, minute, second;
+  char month[4];
+  if (sscanf(dateHeader, "%*3s, %d %3s %d %d:%d:%d %*s", &day, month, &year, &hour, &minute, &second) == 6) {
+    const char* months = "JanFebMarAprMayJunJulAugSepOctNovDec";
+    const char* pos = strstr(months, month);
+    if (pos) {
+      tm.tm_mday = day;
+      tm.tm_mon = (pos - months) / 3;
+      tm.tm_year = year - 1900;
+      tm.tm_hour = hour;
+      tm.tm_min = minute;
+      tm.tm_sec = second;
+      return true;
+    }
+  }
+  return false;
+}
+
 static JsonDocument JsonDoc;
 
 void setup(void) {
@@ -108,6 +130,7 @@ void setup(void) {
 }
 
 void loop(void) {
+  Serial.println("### Measuring");
   digitalWrite(LED_BUILTIN, HIGH);
   WioCellular.enableGrovePower();
 
@@ -119,16 +142,29 @@ void loop(void) {
     WioCellularArduinoTcpClient<WioCellularModule> client{ WioCellular, WioNetwork.config.pdpContextId };
     response = httpRequest(client, GET_HOST, GET_PORT, GET_PATH, "GET", "application/json", "");
   }
-  Serial.print("Body: ");
 
   // Check if the body contains a number and assign it to app_id
   int app_id = 0;
   if (response.body.find_first_not_of("0123456789") == std::string::npos) {
     app_id = std::stoi(response.body);
-    Serial.print("Extracted app_id: ");
-    Serial.println(app_id);
   } else {
     Serial.println("Response body does not contain a valid number.");
+  }
+
+  // Extract the "Date" header and convert it to ISO 8601 format
+  char now_iso8601Date[30];
+  if (response.headers.find("Date") != response.headers.end()) {
+    const std::string& dateHeader = response.headers["Date"];
+
+    // Convert the Date header to ISO 8601 format
+    struct tm tm;
+    if (parseDateHeader(dateHeader.c_str(), tm)) {
+      strftime(now_iso8601Date, sizeof(now_iso8601Date), "%Y-%m-%dT%H:%M:%SZ", &tm);
+    } else {
+      Serial.println("Failed to parse date header.");
+    }
+  } else {
+    Serial.println("Date header not found in the response.");
   }
 
   SensorData sensorData = {0};
@@ -154,9 +190,10 @@ void loop(void) {
     }
   }
 
+  Serial.println("### Completed");
   WioCellular.disableGrovePower();
 
-  sensorData.measure_date = "2025-04-25T12:00:00Z"; // Example ISO 8601 date
+  sensorData.measure_date = now_iso8601Date;
 
   JsonDoc.clear();
   if (generateRequestBody(JsonDoc, app_id, sensorData)) {
@@ -191,7 +228,6 @@ void loop(void) {
  * Generate request body for many sensor data.
  */
 static bool generateRequestBody(JsonDocument& doc, int app_id, const SensorData& sensorData) {
-  Serial.println("### Measuring");
 
   doc["app"] = app_id;
 
@@ -211,7 +247,6 @@ static bool generateRequestBody(JsonDocument& doc, int app_id, const SensorData&
   }
   record["measure_date"]["value"] = sensorData.measure_date;
 
-  Serial.println("### Completed");
 
   return true;
 }
