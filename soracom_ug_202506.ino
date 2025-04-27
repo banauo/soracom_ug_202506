@@ -15,7 +15,7 @@
 #include <WioCellular.h>
 #include <ArduinoJson.h>
 #include <ArduinoHttpClient.h>
-#include <DHT.h>
+#include <Grove_Temperature_And_Humidity_Sensor.h>
 #include <Ultrasonic.h>
 #include <SCD30.h>
 
@@ -131,30 +131,26 @@ void loop(void) {
     Serial.println("Response body does not contain a valid number.");
   }
 
-  SensorData sensorData;
+  SensorData sensorData = {0};
 
   // Read distance from ultrasonic ranger
   sensorData.distance = UltrasonicRanger.MeasureInCentimeters();
 
+  // Read temperature and humidity from SCD30 sensor
   if (scd30.isAvailable()) {
     float result[3] = {0};
     scd30.getCarbonDioxideConcentration(result);
     sensorData.co2 = result[0];
 
-    // Read temperature and humidity from SCD30 sensor
     sensorData.temperature = result[1];
     sensorData.humidity = result[2];
   }
 
   // Read temperature and humidity from DHT22 sensor
-  sensorData.temperature = dht.readTemperature();
-  sensorData.humidity = dht.readHumidity();
-
-  // Check for sensor read errors
-  if (isnan(sensorData.temperature) || isnan(sensorData.humidity)) {
-    Serial.println("Failed to read from DHT sensor!");
-    sensorData.temperature = 0;  // Default value
-    sensorData.humidity = 0;     // Default value
+  float temp_hum_val[2];
+  if (!dht.readTempAndHumidity(temp_hum_val)){
+    sensorData.temperature = temp_hum_val[1];
+    sensorData.humidity = temp_hum_val[0];
   }
 
   WioCellular.disableGrovePower();
