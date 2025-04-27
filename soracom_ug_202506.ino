@@ -17,6 +17,7 @@
 #include <ArduinoHttpClient.h>
 #include <DHT.h>
 #include <Ultrasonic.h>
+#include <SCD30.h>
 
 #define SEARCH_ACCESS_TECHNOLOGY (WioCellularNetwork::SearchAccessTechnology::LTEM)  // https://seeedjp.github.io/Wiki/Wio_BG770A/kb/kb4.html
 #define LTEM_BAND (WioCellularNetwork::NTTDOCOMO_LTEM_BAND)                          // https://seeedjp.github.io/Wiki/Wio_BG770A/kb/kb4.html
@@ -36,11 +37,11 @@ static constexpr int NETWORK_TIMEOUT = 1000 * 60 * 2;  // [ms]
 static constexpr int RECEIVE_TIMEOUT = 1000 * 10;      // [ms]
 
 #define ULTRASONIC_PIN (D30)  // Grove - Digital (P1)
-#define DHTPIN D28  // Grove -Analog (P2)
-#define DHTTYPE DHT22  // Define sensor type as DHT22
+#define DHT_PIN D28  // Grove -Analog (P2)
+#define DHT_TYPE DHT22  // Define sensor type as DHT22
 
 Ultrasonic UltrasonicRanger(ULTRASONIC_PIN);
-DHT dht(DHTPIN, DHTTYPE);  // Create DHT object
+DHT dht(DHT_PIN, DHT_TYPE);  // Create DHT object
 
 struct HttpResponse {
   int statusCode;
@@ -90,8 +91,11 @@ void setup(void) {
   // Start WioCellular
   WioCellular.begin();
 
-  // Initialize DHT sensor
+  // Initialize sensors
+  WioCellular.enableGrovePower();
   dht.begin();
+  Wire.begin();
+  scd30.initialize();
 
   // Power on the cellular module
   if (WioCellular.powerOn(POWER_ON_TIMEOUT) != WioCellularResult::Ok) abort();
@@ -127,14 +131,24 @@ void loop(void) {
     Serial.println("Response body does not contain a valid number.");
   }
 
-  // Create SensorData instance and populate it with sensor data
   SensorData sensorData;
+
+  // Read distance from ultrasonic ranger
   sensorData.distance = UltrasonicRanger.MeasureInCentimeters();
-  sensorData.co2 = 400;       // Example value
+
+  if (scd30.isAvailable()) {
+    float result[3] = {0};
+    scd30.getCarbonDioxideConcentration(result);
+    sensorData.co2 = result[0];
+
+    // Read temperature and humidity from SCD30 sensor
+    sensorData.temperature = result[1];
+    sensorData.humidity = result[2];
+  }
 
   // Read temperature and humidity from DHT22 sensor
-  sensorData.temperature = dht.readTemperature();  // Get temperature
-  sensorData.humidity = dht.readHumidity();        // Get humidity
+  sensorData.temperature = dht.readTemperature();
+  sensorData.humidity = dht.readHumidity();
 
   // Check for sensor read errors
   if (isnan(sensorData.temperature) || isnan(sensorData.humidity)) {
