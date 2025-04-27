@@ -141,7 +141,6 @@ void loop(void) {
     float result[3] = {0};
     scd30.getCarbonDioxideConcentration(result);
     sensorData.co2 = result[0];
-
     sensorData.temperature = result[1];
     sensorData.humidity = result[2];
   }
@@ -149,8 +148,10 @@ void loop(void) {
   // Read temperature and humidity from DHT22 sensor
   float temp_hum_val[2];
   if (!dht.readTempAndHumidity(temp_hum_val)){
-    sensorData.temperature = temp_hum_val[1];
-    sensorData.humidity = temp_hum_val[0];
+    if (temp_hum_val[0] != 0 && temp_hum_val[1] != 0) {
+      sensorData.temperature = temp_hum_val[1];
+      sensorData.humidity = temp_hum_val[0];
+    }
   }
 
   WioCellular.disableGrovePower();
@@ -196,10 +197,18 @@ static bool generateRequestBody(JsonDocument& doc, int app_id, const SensorData&
 
   JsonObject record = doc.createNestedObject("record");
 
-  record["distance"]["value"] = sensorData.distance;
-  record["co2"]["value"] = sensorData.co2;
-  record["temperature"]["value"] = sensorData.temperature;
-  record["humidity"]["value"] = sensorData.humidity;
+  if (sensorData.distance != 0) {
+    record["distance"]["value"] = sensorData.distance;
+  }
+  if (sensorData.co2 != 0) {
+    record["co2"]["value"] = sensorData.co2;
+  }
+  if (sensorData.temperature != 0) {
+    record["temperature"]["value"] = round(sensorData.temperature * 10) / 10.0;
+  }
+  if (sensorData.humidity != 0) {
+    record["humidity"]["value"] = round(sensorData.humidity * 10) / 10.0;
+  }
   record["measure_date"]["value"] = sensorData.measure_date;
 
   Serial.println("### Completed");
