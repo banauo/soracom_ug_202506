@@ -132,7 +132,6 @@ void setup(void) {
 void loop(void) {
   Serial.println("### Measuring");
   digitalWrite(LED_BUILTIN, HIGH);
-  WioCellular.enableGrovePower();
 
   // Wait for DHT22 sensor to stabilize
   delay(1000);
@@ -191,7 +190,6 @@ void loop(void) {
   }
 
   Serial.println("### Completed");
-  WioCellular.disableGrovePower();
 
   sensorData.measure_date = now_iso8601Date;
 
