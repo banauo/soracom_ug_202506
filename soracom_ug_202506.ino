@@ -6,8 +6,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Libraries:
+//   http://librarymanager#WioCellular
 //   http://librarymanager#ArduinoJson 7.0.4
 //   http://librarymanager#ArduinoHttpClient 0.6.1
+//   http://librarymanager#Grove%20Temperature%20And%20Humidity%20Sensor 2.0.2
+//   http://librarymanager#Grove%20Ultrasonic%20Ranger 1.0.1
+//   https://github.com/Seeed-Studio/Seeed_SCD30.git#v1.0.0
 
 #include <Adafruit_TinyUSB.h>
 #include <csignal>
