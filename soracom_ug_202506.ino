@@ -118,7 +118,7 @@ void setup(void) {
   WioCellular.begin();
 
   // Initialize sensors
-  WioCellular.enableGrovePower();
+  digitalWrite(PIN_VGROVE_ENABLE, VGROVE_ENABLE_ON);
   dht.begin();
   Wire.begin();
   scd30.initialize();
