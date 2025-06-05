@@ -6,8 +6,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Libraries:
+//   http://librarymanager#WioCellular
 //   http://librarymanager#ArduinoJson 7.0.4
 //   http://librarymanager#ArduinoHttpClient 0.6.1
+//   http://librarymanager#Grove%20Temperature%20And%20Humidity%20Sensor 2.0.2
+//   http://librarymanager#Grove%20Ultrasonic%20Ranger 1.0.1
+//   https://github.com/Seeed-Studio/Seeed_SCD30.git#v1.0.0
 
 #include <Adafruit_TinyUSB.h>
 #include <csignal>
@@ -33,7 +37,7 @@ static constexpr int POST_PORT = 80;
 
 static constexpr int INTERVAL = 1000 * 60 * 1;         // [ms]
 static constexpr int POWER_ON_TIMEOUT = 1000 * 20;     // [ms]
-static constexpr int NETWORK_TIMEOUT = 1000 * 60 * 2;  // [ms]
+static constexpr int NETWORK_TIMEOUT = 1000 * 60 * 3;  // [ms]
 static constexpr int RECEIVE_TIMEOUT = 1000 * 10;      // [ms]
 
 #define ULTRASONIC_PIN (D30)  // Grove - Digital (P1)
@@ -114,7 +118,7 @@ void setup(void) {
   WioCellular.begin();
 
   // Initialize sensors
-  WioCellular.enableGrovePower();
+  digitalWrite(PIN_VGROVE_ENABLE, VGROVE_ENABLE_ON);
   dht.begin();
   Wire.begin();
   scd30.initialize();
