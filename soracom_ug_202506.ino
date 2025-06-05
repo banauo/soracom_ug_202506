@@ -37,7 +37,7 @@ static constexpr int POST_PORT = 80;
 
 static constexpr int INTERVAL = 1000 * 60 * 1;         // [ms]
 static constexpr int POWER_ON_TIMEOUT = 1000 * 20;     // [ms]
-static constexpr int NETWORK_TIMEOUT = 1000 * 60 * 2;  // [ms]
+static constexpr int NETWORK_TIMEOUT = 1000 * 60 * 3;  // [ms]
 static constexpr int RECEIVE_TIMEOUT = 1000 * 10;      // [ms]
 
 #define ULTRASONIC_PIN (D30)  // Grove - Digital (P1)
